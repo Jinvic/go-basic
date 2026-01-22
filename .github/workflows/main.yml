@@ -1,0 +1,47 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+    release:
+        name: build docs
+        runs-on: ubuntu-latest
+
+        steps:
+            # 检出 Git 仓库
+            - name: Check out git repository
+              uses: actions/checkout@v4.1.1
+            # 安装 Python
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.13'
+            # 安装 MkDocs
+            - name: Install dependencies
+              run: |
+                python -m pip install --upgrade pip
+                pip install mkdocs mkdocs-material PyYAML mkdocs-awesome-pages-plugin
+            # 构建 MkDocs
+            - name: Build
+              run: |
+                mkdocs build
+
+            # 部署到服务器
+            - name: Deploy to server
+              uses: easingthemes/ssh-deploy@v5.1.0
+              with:
+                SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+                ARGS: "-rlgoDzvc --delete"
+                SOURCE: ./site/
+                REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+                REMOTE_USER: ${{ secrets.REMOTE_USER }}
+                TARGET: ${{ secrets.REMOTE_TARGET }}
+                SCRIPT_BEFORE: |
+                  echo "🔧 开始部署..."
+                  echo "时间: $(date)"
+                SCRIPT_AFTER: |
+                  echo "✅ 部署完成"
+                  echo "时间: $(date)"
